@@ -62,7 +62,7 @@ function render(data) {
       caseRow.style.display = 'flex';
       caseRow.style.alignItems = 'center';
       const caseSpan = document.createElement('span');
-      caseSpan.textContent = 'Case: ' + titleNumber;
+      caseSpan.textContent = 'Case: #' + titleNumber;
       caseSpan.style.flex = '1';
       const copyBtn = document.createElement('button');
       copyBtn.textContent = 'Copy';
@@ -278,7 +278,8 @@ async function initPopup() {
   // read persisted preference
   try {
     const s = await chrome.storage.local.get('showBody');
-    const show = (s && typeof s.showBody !== 'undefined') ? s.showBody : true;
+    // default to hidden unless user enabled it
+    const show = (s && typeof s.showBody !== 'undefined') ? s.showBody : false;
     applyShow(show);
   } catch (err) {
     applyShow(true);
@@ -288,7 +289,7 @@ async function initPopup() {
     toggleBtn.addEventListener('click', async () => {
       try {
         const s = await chrome.storage.local.get('showBody');
-        const cur = (s && typeof s.showBody !== 'undefined') ? s.showBody : true;
+        const cur = (s && typeof s.showBody !== 'undefined') ? s.showBody : false;
         const next = !cur;
         await chrome.storage.local.set({ showBody: next });
         applyShow(next);
