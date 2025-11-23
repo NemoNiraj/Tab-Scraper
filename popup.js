@@ -69,7 +69,8 @@ function render(data) {
       copyBtn.style.marginLeft = '8px';
       copyBtn.addEventListener('click', async () => {
         try {
-          await navigator.clipboard.writeText(titleNumber);
+          // include leading # when copying the case id
+          await navigator.clipboard.writeText('#' + titleNumber);
           copyBtn.textContent = 'Copied';
           setTimeout(() => (copyBtn.textContent = 'Copy'), 1400);
         } catch (err) {
