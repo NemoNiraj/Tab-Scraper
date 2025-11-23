@@ -1,0 +1,13 @@
+{
+  "manifest_version": 3,
+  "name": "Active Tab Scraper",
+  "version": "1.0",
+  "description": "Watches the active Chrome tab and scrapes page content (HTML and text).",
+  "permissions": ["tabs", "scripting", "storage", "activeTab"],
+  "host_permissions": ["https://onitinc.lightning.force.com/*"],
+  "background": { "service_worker": "background.js" },
+  "action": {
+    "default_title": "Active Tab Scraper",
+    "default_popup": "popup.html"
+  }
+}

@@ -1,0 +1,41 @@
+<!doctype html>
+<html>
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width,initial-scale=1" />
+    <title>Active Tab Scraper</title>
+    <style>
+      body { font-family: Arial, sans-serif; width: 420px; margin: 8px; }
+      header { display:flex; justify-content:space-between; align-items:center }
+      pre { white-space: pre-wrap; word-wrap: break-word; max-height: 320px; overflow: auto; background:#f5f5f5; padding:8px; border-radius:4px }
+      button { margin-right: 6px }
+    </style>
+  </head>
+  <body>
+    <header>
+      <h3 style="margin:0">Active Tab Scraper</h3>
+      <div>
+        <button id="refresh">Refresh</button>
+        <button id="download">Download</button>
+      </div>
+    </header>
+
+    <div style="margin-top:8px">
+      <strong>URL:</strong>
+      <div id="url" style="font-size:12px;color:#333;word-break:break-all"></div>
+      <strong style="display:block;margin-top:6px">Title:</strong>
+      <div id="title" style="font-size:12px;color:#333"></div>
+      <div style="margin-top:8px">
+        <strong>Contact Details:</strong>
+        <div id="contacts" style="font-size:12px;color:#333; margin-top:4px"></div>
+      </div>
+      <div style="display:flex;align-items:center;gap:8px;margin-top:6px">
+        <strong style="margin:0">Text (body):</strong>
+        <button id="toggleBody" style="font-size:12px;padding:4px 8px">Hide body</button>
+      </div>
+      <pre id="text">(no data yet)</pre>
+    </div>
+
+    <script src="popup.js"></script>
+  </body>
+</html>
