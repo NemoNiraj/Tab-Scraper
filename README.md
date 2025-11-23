@@ -22,3 +22,6 @@ Privacy & Security:
 Notes / Alternatives:
 
 - If you prefer a script that attaches via Chrome's remote debugging protocol (without an extension), you can run Chrome with `--remote-debugging-port=9222` and use a Python/Node CDP client. I can provide that alternative if you want.
+
+
+Feel Free to Fork it!
