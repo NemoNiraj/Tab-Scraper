@@ -22,9 +22,14 @@ function render(data) {
       // Try common inline label: "Customer Account: <value>" stopping before other labels
       let m = t.match(/Customer Account\s*:\s*([\s\S]*?)(?=\r?\n(?:Subject:|Priority:|Actions for|Show Actions|Show more actions|Case\b)|$)/i);
       if (m && m[1]) return m[1].trim().replace(/\s*\(.*\)\s*$/,'').replace(/\r?\n/g,' ').trim();
-      // fallback: look for "Account Name:" label
-      m = t.match(/Account Name\s*:\s*([\s\S]*?)(?=\r?\n(?:Subject:|Priority:|Actions for|Show Actions|Case\b)|$)/i);
-      if (m && m[1]) return m[1].trim().replace(/\s*\(.*\)\s*$/,'').replace(/\r?\n/g,' ').trim();
+      // fallback: look for "Account Name:" label inline single line
+      // m = t.match(/Account Name\s*:\s*([^\r\n]+)/i);
+      // if (m && m[1]) return m[1].trim().replace(/\s*\(.*\)\s*$/,'').trim();
+
+      // enhanced: look for multiline text below "Account Name" placeholder (including lines until blank line or next label)
+      // m = t.match(/Account Name\s*:\s*\r?\n([\s\S]+?)(?=\r?\n\S+?:|\r?\n\r?\n|$)/i);
+      // if (m && m[1]) return m[1].trim().replace(/\s*\(.*\)\s*$/,'').trim();
+
       // final fallback: look for 'Customer Account' followed by newline then value
       m = t.match(/Customer Account\s*\r?\n\s*([^-\r\n][^\r\n]{1,500})/i);
       if (m && m[1]) return m[1].trim().replace(/\s*\(.*\)\s*$/,'').trim();
@@ -34,27 +39,75 @@ function render(data) {
     function extractActionsFromText(t) {
       const out = new Set();
       if (!t) return Array.from(out);
-      // Actions for <id> (prefer 6+ digit IDs)
-      const rx = /Actions for\s+([0-9]{6,})/ig;
-      let mm;
-      while ((mm = rx.exec(t)) !== null) {
-        out.add(mm[1]);
-      }
+      // Actions for <id> (prefer 6+ digit IDs) 
+      
+      // This one gives the first tab case number 
+      // const rx = /Actions for\s+([0-9]{6,})/ig;
+      // let mm;
+      // while ((mm = rx.exec(t)) !== null) {
+      //   out.add(mm[1]);
+      // }
       // Also capture 'Case Number' lines
+
       const rx2 = /Case Number\s*[:\n]\s*([0-9]{6,})/ig;
       while ((mm = rx2.exec(t)) !== null) out.add(mm[1]);
       // Also capture standalone 6+ digit tokens that appear on lines starting with 'Actions for' or 'Show Actions'
       const lines = t.split(/\r?\n/);
-      for (const line of lines) {
-        if (/Actions for|Show Actions|Show actions|Open\s+[0-9]{6,}/i.test(line)) {
-          const m2 = line.match(/([0-9]{6,})/);
-          if (m2) out.add(m2[1]);
-        }
-      }
+      // for (const line of lines) {
+      //   if (/Actions for|Show Actions|Show actions|Open\s+[0-9]{6,}/i.test(line)) {
+      //     const m2 = line.match(/([0-9]{6,})/);
+      //     if (m2) out.add(m2[1]);
+      //   }
+      // }
       return Array.from(out);
     }
 
-    const customerAccount = extractCustomerFromText(bodyText) || (data.customerAccount || '');
+    function extractCustomerNameText(t) {
+      const out = new Set();
+      if (!t) return Array.from(out);
+      // Actions for <id> (prefer 6+ digit IDs)
+      // const rx = /Actions for\s+([0-9]{6,})/ig;
+      // let mm;
+      // while ((mm = rx.exec(t)) !== null) {
+      //   out.add(mm[1]);
+      // }
+      // Also capture 'Case Number' lines
+      // const rx2 = /Case Number\s*[:\n]\s*([0-9]{6,})/ig;
+      // while ((mm = rx2.exec(t)) !== null) out.add(mm[1]);
+      // Also capture standalone 6+ digit tokens that appear on lines starting with 'Actions for' or 'Show Actions'
+      const lines = t.split(/\r?\n/);
+      // for (const line of lines) {
+      //   if (/Actions for|Show Actions|Show actions|Open\s+[0-9]{6,}/i.test(line)) {
+      //     const m2 = line.match(/([0-9]{6,})/);
+      //     if (m2) out.add(m2[1]);
+      //   }
+      // }
+      // Detect "Account Name" in same line or next line
+      for (let i = 0; i < lines.length; i++) {
+        const line = lines[i];
+
+        // Same-line version: Account Name John Smith
+        if (/Account Name\s+\S+/i.test(line)) {
+          const m2 = line.match(/Account Name\s*[:\-]?\s*(.+)$/i);
+          if (m2 && m2[1]) out.add(m2[1].trim());
+        }
+
+        // Next-line version:
+        // Account Name
+        // John Smith
+        if (/^Account Name\s*[:\-]?\s*$/i.test(line.trim())) {
+          const next = lines[i + 1];
+          if (next && next.trim()) {
+            out.add(next.trim());
+          }
+        }
+      }
+
+      return Array.from(out);
+    }
+
+    
+    const customerAccount = extractCustomerNameText(bodyText) || (data.customerAccount || '');
     const actionsFor = (extractActionsFromText(bodyText).length) ? extractActionsFromText(bodyText) : ((data.actionsFor && Array.isArray(data.actionsFor)) ? data.actionsFor : []);
 
     if (titleNumber) {
@@ -146,25 +199,25 @@ async function doScrape(tabId) {
           }
 
           // find "Actions for ..." lines anywhere in the container
-          for (const n of Array.from(container.querySelectorAll('*'))) {
-            const t = (n.textContent || '').trim();
-            if (!t) continue;
-            const m = t.match(/Actions for\s+(.+)/i);
-            if (m && m[1]) {
-              // normalize: stop at newline, then prefer numeric case id if present
-              const entry = m[1].split(/\r?\n/)[0].trim();
-              if (entry) {
-                  // prefer IDs with at least 6 digits to avoid matching years
-                  const idMatch = entry.match(/\b(\d{6,})\b/);
-                  if (idMatch) actionsFor.add(idMatch[1]);
-                  else {
-                    // as a last resort, take the first token but keep it short
-                    const tok = entry.split(/[\s|,]+/)[0];
-                    if (tok && tok.length <= 20) actionsFor.add(tok);
-                  }
-              }
-            }
-          }
+          // for (const n of Array.from(container.querySelectorAll('*'))) {
+          //   const t = (n.textContent || '').trim();
+          //   if (!t) continue;
+          //   const m = t.match(/Actions for\s+(.+)/i);
+          //   if (m && m[1]) {
+          //     // normalize: stop at newline, then prefer numeric case id if present
+          //     const entry = m[1].split(/\r?\n/)[0].trim();
+          //     if (entry) {
+          //         // prefer IDs with at least 6 digits to avoid matching years
+          //         const idMatch = entry.match(/\b(\d{6,})\b/);
+          //         if (idMatch) actionsFor.add(idMatch[1]);
+          //         else {
+          //           // as a last resort, take the first token but keep it short
+          //           const tok = entry.split(/[\s|,]+/)[0];
+          //           if (tok && tok.length <= 20) actionsFor.add(tok);
+          //         }
+          //     }
+          //   }
+          // }
 
           // look for label/value patterns inside the container
           const candidates = Array.from(container.querySelectorAll('span,div,label,dt,dd'))
@@ -184,11 +237,30 @@ async function doScrape(tabId) {
             }
 
             // Account Name
+            if (!accountName) {
+              // First try to get from special data attribute selector if present
+              const special = c.el.querySelector('[data-target-selection-name="sfdc:RecordField.Contact.AccountId"]');
+              if (special) {
+                const a = special.querySelector('a');
+                const txt = textOf(a) || textOf(special);
+                if (txt && !/Search this list|Last Modified Date|Date\/Time Opened|aren't searchable/i.test(txt)) {
+                  accountName = txt.replace(/Account Name\s*:?/i, '').trim();
+                  continue;
+                }
+              }
+            }
+            // fallback to previous method matching label text and next sibling text
             if (!accountName && /(^|\b)(Account Name|Account)\b[:]?/i.test(t)) {
               const next = c.el.nextElementSibling;
-              if (next && textOf(next)) { accountName = textOf(next); continue; }
-              accountName = t.replace(/(^|\b)(Account Name|Account)\b[:]?/i, '').trim();
-              if (accountName) continue;
+              if (next && textOf(next) && !/Search this list|Last Modified Date|Date\/Time Opened|aren't searchable/i.test(textOf(next))) {
+                accountName = textOf(next);
+                continue;
+              }
+              const replaced = t.replace(/(^|\b)(Account Name|Account)\b[:]?/i, '').trim();
+              if (replaced && !/Search this list|Last Modified Date|Date\/Time Opened|aren't searchable/i.test(replaced)) {
+                accountName = replaced;
+                continue;
+              }
             }
 
             // Customer Account explicit label
