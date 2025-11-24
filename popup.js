@@ -41,7 +41,6 @@ function render(data) {
       if (!t) return Array.from(out);
       // Actions for <id> (prefer 6+ digit IDs) 
       
-      // This one gives the first tab case number 
       // const rx = /Actions for\s+([0-9]{6,})/ig;
       // let mm;
       // while ((mm = rx.exec(t)) !== null) {
@@ -53,6 +52,8 @@ function render(data) {
       while ((mm = rx2.exec(t)) !== null) out.add(mm[1]);
       // Also capture standalone 6+ digit tokens that appear on lines starting with 'Actions for' or 'Show Actions'
       const lines = t.split(/\r?\n/);
+      
+      // This one gives the first tab case number 
       // for (const line of lines) {
       //   if (/Actions for|Show Actions|Show actions|Open\s+[0-9]{6,}/i.test(line)) {
       //     const m2 = line.match(/([0-9]{6,})/);
@@ -65,24 +66,7 @@ function render(data) {
     function extractCustomerNameText(t) {
       const out = new Set();
       if (!t) return Array.from(out);
-      // Actions for <id> (prefer 6+ digit IDs)
-      // const rx = /Actions for\s+([0-9]{6,})/ig;
-      // let mm;
-      // while ((mm = rx.exec(t)) !== null) {
-      //   out.add(mm[1]);
-      // }
-      // Also capture 'Case Number' lines
-      // const rx2 = /Case Number\s*[:\n]\s*([0-9]{6,})/ig;
-      // while ((mm = rx2.exec(t)) !== null) out.add(mm[1]);
-      // Also capture standalone 6+ digit tokens that appear on lines starting with 'Actions for' or 'Show Actions'
       const lines = t.split(/\r?\n/);
-      // for (const line of lines) {
-      //   if (/Actions for|Show Actions|Show actions|Open\s+[0-9]{6,}/i.test(line)) {
-      //     const m2 = line.match(/([0-9]{6,})/);
-      //     if (m2) out.add(m2[1]);
-      //   }
-      // }
-      // Detect "Account Name" in same line or next line
       for (let i = 0; i < lines.length; i++) {
         const line = lines[i];
 
@@ -91,10 +75,6 @@ function render(data) {
           const m2 = line.match(/Account Name\s*[:\-]?\s*(.+)$/i);
           if (m2 && m2[1]) out.add(m2[1].trim());
         }
-
-        // Next-line version:
-        // Account Name
-        // John Smith
         if (/^Account Name\s*[:\-]?\s*$/i.test(line.trim())) {
           const next = lines[i + 1];
           if (next && next.trim()) {
@@ -197,27 +177,6 @@ async function doScrape(tabId) {
             let m;
             while ((m = emailRegex.exec(txt)) !== null) emails.add(m[0]);
           }
-
-          // find "Actions for ..." lines anywhere in the container
-          // for (const n of Array.from(container.querySelectorAll('*'))) {
-          //   const t = (n.textContent || '').trim();
-          //   if (!t) continue;
-          //   const m = t.match(/Actions for\s+(.+)/i);
-          //   if (m && m[1]) {
-          //     // normalize: stop at newline, then prefer numeric case id if present
-          //     const entry = m[1].split(/\r?\n/)[0].trim();
-          //     if (entry) {
-          //         // prefer IDs with at least 6 digits to avoid matching years
-          //         const idMatch = entry.match(/\b(\d{6,})\b/);
-          //         if (idMatch) actionsFor.add(idMatch[1]);
-          //         else {
-          //           // as a last resort, take the first token but keep it short
-          //           const tok = entry.split(/[\s|,]+/)[0];
-          //           if (tok && tok.length <= 20) actionsFor.add(tok);
-          //         }
-          //     }
-          //   }
-          // }
 
           // look for label/value patterns inside the container
           const candidates = Array.from(container.querySelectorAll('span,div,label,dt,dd'))
