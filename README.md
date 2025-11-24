@@ -1,4 +1,4 @@
-# Active Tab Scraper (Chrome Extension)
+# SalesForce Active Tab Scraper (Chrome Extension)
 
 This simple Chrome extension watches the active tab and scrapes page content (title, URL, body text, and full HTML). It saves the latest scrape to extension storage and shows it in a popup where you can download it.
 
