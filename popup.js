@@ -114,7 +114,32 @@ function render(data) {
       caseRow.appendChild(copyBtn);
       contactsEl.appendChild(caseRow);
     }
-    if (customerAccount) contactsEl.appendChild(Object.assign(document.createElement('div'), { textContent: 'Customer Account: ' + customerAccount }));
+    if (customerAccount) {
+      const caseRow = document.createElement('div');
+      caseRow.style.display = 'flex';
+      caseRow.style.alignItems = 'center';
+      const caseSpan = document.createElement('span');
+      caseSpan.textContent = 'Customer Account: ' + customerAccount;
+      caseSpan.style.flex = '1';
+      const copyBtn = document.createElement('button');
+      copyBtn.textContent = 'Copy';
+      copyBtn.style.marginLeft = '8px';
+      copyBtn.style.marginTop = '4px';
+      copyBtn.addEventListener('click', async () => {
+        try {
+          // include leading # when copying the case id
+          await navigator.clipboard.writeText(customerAccount);
+          copyBtn.textContent = 'Copied';
+          setTimeout(() => (copyBtn.textContent = 'Copy'), 1400);
+        } catch (err) {
+          alert('Copy failed: ' + String(err));
+        }
+      });
+      caseRow.appendChild(caseSpan);
+      caseRow.appendChild(copyBtn);
+      contactsEl.appendChild(caseRow);
+    }
+    //if (customerAccount) contactsEl.appendChild(Object.assign(document.createElement('div'), { textContent: 'Customer Account: ' + customerAccount }));
     if (actionsFor.length) contactsEl.appendChild(Object.assign(document.createElement('div'), { textContent: 'Actions for: ' + actionsFor.join(', ') }));
     if (!contactsEl.childNodes.length) contactsEl.appendChild(Object.assign(document.createElement('div'), { textContent: 'No contact details' }));
   }
