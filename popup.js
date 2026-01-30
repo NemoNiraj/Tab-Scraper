@@ -35,31 +35,36 @@ function render(data) {
       if (m && m[1]) return m[1].trim().replace(/\s*\(.*\)\s*$/,'').trim();
       return '';
     }
+let mm;
 
     function extractActionsFromText(t) {
       const out = new Set();
       if (!t) return Array.from(out);
-      // Actions for <id> (prefer 6+ digit IDs) 
-      
-      // const rx = /Actions for\s+([0-9]{6,})/ig;
-      // let mm;
-      // while ((mm = rx.exec(t)) !== null) {
-      //   out.add(mm[1]);
-      // }
-      // Also capture 'Case Number' lines
 
-      const rx2 = /Case Number\s*[:\n]\s*([0-9]{6,})/ig;
-      while ((mm = rx2.exec(t)) !== null) out.add(mm[1]);
-      // Also capture standalone 6+ digit tokens that appear on lines starting with 'Actions for' or 'Show Actions'
+      // Capture numeric Case Number values (e.g. "Case Number: 00536948")
+      // const rxCase = /Case Number\s*[:\n]\s*([0-9]{6,})/ig;
+      // let mtemp;
+      // while ((mtemp = rxCase.exec(t)) !== null) out.add(mtemp[1]);
+
+      // Capture the value for the "Help Record Transaction/Subdomain Login URL" placeholder
+      // (grab whatever text follows on the same line). Use a local match variable and
+      // assign the captured value to the outer `mm` so the later `if (mm)` block can use it.
+      const rxHelp = /Help Record Transaction\/Subdomain Login URL\s*[:\n]\s*([^\r\n]+)/ig;
+      let mtemp;
+      while ((mtemp = rxHelp.exec(t)) !== null) {
+        out.add(mtemp[1].trim());
+        mm = mtemp[1].trim();
+      }
+
+      // Also scan lines mentioning Actions/Case to extract any standalone 6+ digit tokens
       const lines = t.split(/\r?\n/);
-      
-      // This one gives the first tab case number 
       // for (const line of lines) {
-      //   if (/Actions for|Show Actions|Show actions|Open\s+[0-9]{6,}/i.test(line)) {
+      //   if (/(Help Record Transaction\/Subdomain Login URL)\b/i.test(line)) {
       //     const m2 = line.match(/([0-9]{6,})/);
       //     if (m2) out.add(m2[1]);
       //   }
       // }
+
       return Array.from(out);
     }
 
@@ -114,6 +119,33 @@ function render(data) {
       caseRow.appendChild(copyBtn);
       contactsEl.appendChild(caseRow);
     }
+
+    if (titleNumber) {
+      const caseRow = document.createElement('div');
+      caseRow.style.display = 'flex';
+      caseRow.style.alignItems = 'center';
+      const caseSpan = document.createElement('span');
+      caseSpan.textContent = 'Case Comment: ' + titleNumber;
+      caseSpan.style.flex = '1';
+      const copyBtn = document.createElement('button');
+      copyBtn.textContent = 'Copy';
+      copyBtn.style.marginLeft = '8px';
+      copyBtn.style.marginTop = '4px';
+      copyBtn.addEventListener('click', async () => {
+        try {
+          // include leading # when copying the case id
+          await navigator.clipboard.writeText('#' + titleNumber + ' - ');
+          copyBtn.textContent = 'Copied';
+          setTimeout(() => (copyBtn.textContent = 'Copy'), 1400);
+        } catch (err) {
+          alert('Copy failed: ' + String(err));
+        }
+      });
+      caseRow.appendChild(caseSpan);
+      caseRow.appendChild(copyBtn);
+      contactsEl.appendChild(caseRow);
+    }
+
     if (customerAccount) {
       const caseRow = document.createElement('div');
       caseRow.style.display = 'flex';
@@ -139,8 +171,38 @@ function render(data) {
       caseRow.appendChild(copyBtn);
       contactsEl.appendChild(caseRow);
     }
+    
+    if (mm != null && mm !== 'Edit Record Transaction/Subdomain Login URL') {
+    if (mm) {
+      const caseRow = document.createElement('div');
+      caseRow.style.display = 'flex';
+      caseRow.style.alignItems = 'center';
+      const caseSpan = document.createElement('span');
+      caseSpan.textContent = 'Record URL: ' + 'copy ?';
+      caseSpan.style.flex = '1';
+      const copyBtn = document.createElement('button');
+      copyBtn.textContent = 'Copy';
+      copyBtn.style.marginLeft = '8px';
+      copyBtn.style.marginTop = '4px';
+      copyBtn.style.truncate = 'true';
+      copyBtn.addEventListener('click', async () => {
+        try {
+          // include leading # when copying the case id
+          await navigator.clipboard.writeText(mm);
+          copyBtn.textContent = 'Copied';
+          setTimeout(() => (copyBtn.textContent = 'Copy'), 1400);
+        } catch (err) {
+          alert('Copy failed: ' + String(err));
+        }
+      });
+      caseRow.appendChild(caseSpan);
+      caseRow.appendChild(copyBtn);
+      contactsEl.appendChild(caseRow);
+    }
+  }
+
     //if (customerAccount) contactsEl.appendChild(Object.assign(document.createElement('div'), { textContent: 'Customer Account: ' + customerAccount }));
-    if (actionsFor.length) contactsEl.appendChild(Object.assign(document.createElement('div'), { textContent: 'Actions for: ' + actionsFor.join(', ') }));
+    //if (actionsFor.length) contactsEl.appendChild(Object.assign(document.createElement('div'), { textContent: 'Actions for: ' + actionsFor.join(', ') }));
     if (!contactsEl.childNodes.length) contactsEl.appendChild(Object.assign(document.createElement('div'), { textContent: 'No contact details' }));
   }
 
